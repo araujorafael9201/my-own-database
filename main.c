@@ -69,10 +69,10 @@ void execute_query(int n_records, char* db_buffer, QUERY query, QUERY_RESULT *qu
 				break;
 			}
 
-			strncpy(db_buffer + (n_records * RECORD_SIZE), query.command, strlen(query.command) - 1); // -1 removes \n
+			strncpy(db_buffer + (n_records * RECORD_SIZE), query.command, strlen(query.command));
 
 			memset(query_result->result, 0, strlen(query_result->result)); // Clearing previous result
-			strncpy(query_result->result, query.command, strlen(query.command) - 1); // -1 removes \n
+			strncpy(query_result->result, query.command, strlen(query.command));
 			
 			query_result->type = INSERT_SUCCESS;
 
@@ -87,10 +87,10 @@ void execute_query(int n_records, char* db_buffer, QUERY query, QUERY_RESULT *qu
 void parse_query(char *query_buffer, QUERY *query) {
 	if (strncmp("SELECT", query_buffer, 6) == 0) {
 		query->type = SELECT;
-		strcpy(query->command, query_buffer + 7);
+		sscanf(query_buffer, "SELECT %s", query->command);
 	} else if (strncmp("INSERT", query_buffer, 6) == 0) {
 		query->type = INSERT;	
-		strcpy(query->command, query_buffer + 7);
+		sscanf(query_buffer, "INSERT %s", query->command);
 	} else if (strncmp("EXIT", query_buffer, 4) == 0) {
 		query->type = EXIT;	
 	} else {

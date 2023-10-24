@@ -250,6 +250,13 @@ int main(int argc, char* argv[]) {
 	while (stop == 0) {
 		printf("> ");
 		fgets(query_text_buffer, MAX_QUERY_SIZE, stdin);
+	
+		if (query_text_buffer[strlen(query_text_buffer) - 1] != '\n') {
+			int ch;
+			while ((ch = getchar()) != '\n' && ch != EOF) {
+				// Clear the input buffer
+			}
+		}
 
 		parse_query(query_text_buffer, query);
 

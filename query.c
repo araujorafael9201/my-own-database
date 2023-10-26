@@ -2,18 +2,19 @@
 #include "table.h"
 #include "user.h"
 
-QUERY_RESULT *init_query_result() {
-	QUERY_RESULT *result = malloc(sizeof(QUERY_RESULT));
-	result->result = malloc(MAX_RESPONSE_SIZE) ;
-	return result;
-}
+QUERY *init_query() {
+	QUERY *query = malloc(sizeof(QUERY));
+	query->user_to_insert = malloc(sizeof(User));
+	query->result = malloc(sizeof(char) * MAX_RESPONSE_SIZE);
 
-void execute_query(Table *table, QUERY query, QUERY_RESULT *query_result) {
+	return query;
+}
+void execute_query(Table *table, QUERY query) {
 	// size_t index;
 	switch (query.type) {
 		case SELECT:
 			if (query.index >= table->n_records) {
-				query_result->type = INVALID_INDEX_ERR;
+				query.result_type = INVALID_INDEX_ERR;
 				break;
 			}
 
@@ -34,19 +35,19 @@ void execute_query(Table *table, QUERY query, QUERY_RESULT *query_result) {
 			char *return_str = malloc(sizeof(char) * RECORD_SIZE + 10);
 			sprintf(return_str, "%s - %s - %d", deserialized_user->name, deserialized_user->email, deserialized_user->height);
 
-			memset(query_result->result, 0, strlen(query_result->result)); // Clearing previous result
-			strncpy(query_result->result, return_str, strlen(return_str));
+			memset(query.result, 0, strlen(query.result)); // Clearing previous result
+			strncpy(query.result, return_str, strlen(return_str));
 
 			free(return_str);
 			free(deserialized_user);
 			free(serialized_user_str);
 
-			query_result->type = SELECT_SUCCESS;
+			query.result_type = SELECT_SUCCESS;
 
 			break;
 		case INSERT:
 			if (table->n_records >= (N_PAGES * PAGE_SIZE)) {
-				query_result->type = MAX_RECORDS_ERR;
+				query.result_type = MAX_RECORDS_ERR;
 				break;
 			}
 
@@ -62,16 +63,18 @@ void execute_query(Table *table, QUERY query, QUERY_RESULT *query_result) {
 
 			memcpy(page_bfr + (page_offs * RECORD_SIZE), serialized_user, RECORD_SIZE);
 
-			memset(query_result->result, 0, strlen(query_result->result)); // Clearing previous result
-			strncpy(query_result->result, serialized_user, strlen(serialized_user));
+			memset(query.result, 0, strlen(query.result)); // Clearing previous result
+			strncpy(query.result, serialized_user, strlen(serialized_user));
 
 			free(serialized_user);
+
+			table->n_records += 1;
 		
-			query_result->type = INSERT_SUCCESS;
+			query.result_type = INSERT_SUCCESS;
 
 			break;
 		default:
-			query_result->type = UNKNOWN_ERR;
+			query.result_type = UNKNOWN_ERR;
 			break;
 	}
 }

@@ -12,7 +12,7 @@ typedef struct Table {
 	void *pages[N_PAGES];
 } Table;
 
-Table *init_table();
+Table *init_table(char *db_file);
 void load_page(int page_n, Table* table);
 void save_table(Table *table);
 

@@ -10,47 +10,11 @@
 int MAX_QUERY_SIZE = 50;
 
 int main(int argc, char* argv[]) {
-	Table *table = init_table();
-
-	if (argc == 1) {
-		table->db_file = fopen("test.db", "rb+");
-	} else {
-		table->db_file = fopen(argv[1], "rb+");
-	}
-
-	// Get n of records
-	fseek(table->db_file, 0, SEEK_END);
-	if (ftell(table->db_file) == 0) {
-		table->n_records = 0;
-	} else {
-		fseek(table->db_file, -10, SEEK_END);
-		char* n_records = malloc(sizeof(char) * 10);
-		fread(n_records, 10, 1, table->db_file);
-
-		int n_records_str_len = 0;
-		for (int i = 0 ; i < 10 ; ++i) {
-			if (n_records[i]) {
-				n_records_str_len += 1;
-			}
-		}
-		
-		char *n_records_trimmed = malloc(n_records_str_len);
-		memcpy(n_records_trimmed, n_records + 10 - n_records_str_len, n_records_str_len);
-
-		table->n_records = atoi(n_records_trimmed);
-
-		free(n_records);
-		free(n_records_trimmed);
-	}
-
-	fseek(table->db_file, 0, SEEK_SET);
+	Table *table = init_table(argv[1]);
 
 	char *query_text_buffer = malloc(MAX_QUERY_SIZE);
 
-	QUERY *query = malloc(sizeof(QUERY));
-	query->user_to_insert = malloc(sizeof(User));
-
-	QUERY_RESULT *query_result = init_query_result();
+	QUERY *query = init_query();
 
 	int stop = 0;
 
@@ -65,7 +29,6 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
-
 		parse_query(query_text_buffer, query);
 
 		switch (query->type) {
@@ -77,7 +40,7 @@ int main(int argc, char* argv[]) {
 				stop = 1;
 				break;
 			default:
-				execute_query(table, *query, query_result);
+				execute_query(table, *query);
 
 				int n_pages = 0;
 				for (int i = 0 ; i < N_PAGES ; ++i) {
@@ -88,13 +51,12 @@ int main(int argc, char* argv[]) {
 
 				printf("N of pages loaded: %d\n", n_pages);
 
-				switch (query_result->type) {
+				switch (query->result_type) {
 					case INSERT_SUCCESS:
-						printf("Inserted %s\n", query_result->result);
-						table->n_records += 1;
+						printf("Inserted %s\n", query->result);
 						break;
 					case SELECT_SUCCESS:
-						printf("%s\n", query_result->result);
+						printf("%s\n", query->result);
 						break;
 					case INVALID_INDEX_ERR:
 						printf("Invalid Index: %d\n", query->index);

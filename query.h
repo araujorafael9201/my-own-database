@@ -13,12 +13,6 @@ typedef enum QUERY_TYPE {
 	EXIT
 } QUERY_TYPE;
 
-typedef struct QUERY {
-	QUERY_TYPE type;
-	int index; // Only used in SELECT
-	User *user_to_insert; // Only used in INSERT
-} QUERY;
-
 typedef enum QUERY_RESULT_TYPE  {
 	SELECT_SUCCESS,
 	INVALID_INDEX_ERR,
@@ -28,13 +22,16 @@ typedef enum QUERY_RESULT_TYPE  {
 	UNKNOWN_ERR,
 } QUERY_RESULT_TYPE;
 
-typedef struct QUERY_RESULT {
-	QUERY_RESULT_TYPE type;
-	char* result;
-} QUERY_RESULT;
+typedef struct QUERY {
+	QUERY_TYPE type;
+	int index; // Only used in SELECT
+	User *user_to_insert; // Only used in INSERT
+	QUERY_RESULT_TYPE result_type;
+	char *result;
+} QUERY;
 
-QUERY_RESULT *init_query_result();
-void execute_query(Table *table, QUERY query, QUERY_RESULT *query_result);
+QUERY *init_query();
+void execute_query(Table *table, QUERY query);
 void parse_query(char *query_buffer, QUERY *query);
 
 

@@ -1,11 +1,38 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include "table.h"
 #include "user.h"
 
-Table *init_table() {
+Table *init_table(char *db_file) {
 	Table *table = malloc(sizeof(Table));
-	table->n_records = 0;
+	table->db_file = fopen(db_file, "rb+");
 
+	// Get n of records
+	fseek(table->db_file, 0, SEEK_END);
+	if (ftell(table->db_file) == 0) {
+		table->n_records = 0;
+	} else {
+		fseek(table->db_file, -10, SEEK_END);
+		char* n_records = malloc(sizeof(char) * 10);
+		fread(n_records, 10, 1, table->db_file);
+
+		int n_records_str_len = 0;
+		for (int i = 0 ; i < 10 ; ++i) {
+			if (n_records[i]) {
+				n_records_str_len += 1;
+			}
+		}
+		
+		char *n_records_trimmed = malloc(n_records_str_len);
+		memcpy(n_records_trimmed, n_records + 10 - n_records_str_len, n_records_str_len);
+
+		table->n_records = atoi(n_records_trimmed);
+
+		free(n_records);
+		free(n_records_trimmed);
+	}
+
+	fseek(table->db_file, 0, SEEK_SET);
 	return table;
 }
 

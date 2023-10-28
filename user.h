@@ -17,7 +17,7 @@ typedef struct User {
 	int height;
 } User;
 
-char *serialize_user(User *user);
-User *deserialize_user(char *serialized_user);
+void serialize_user(User *user, char *serialized_user_str);
+void deserialize_user(User *user, char *serialized_user);
 
 #endif

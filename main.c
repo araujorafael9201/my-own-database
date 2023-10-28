@@ -10,7 +10,12 @@
 int MAX_QUERY_SIZE = 50;
 
 int main(int argc, char* argv[]) {
-	Table *table = init_table(argv[1]);
+	Table *table;
+	if (argc >= 2) {
+		table = init_table(argv[1]);
+	} else {
+		table = init_table("test.db");
+	}
 
 	char *query_text_buffer = malloc(MAX_QUERY_SIZE);
 
@@ -40,7 +45,7 @@ int main(int argc, char* argv[]) {
 				stop = 1;
 				break;
 			default:
-				execute_query(table, *query);
+				execute_query(table, query);
 
 				int n_pages = 0;
 				for (int i = 0 ; i < N_PAGES ; ++i) {
@@ -57,6 +62,9 @@ int main(int argc, char* argv[]) {
 						break;
 					case SELECT_SUCCESS:
 						printf("%s\n", query->result);
+						break;
+					case SELECT_ERR:
+						printf("Could not find %s\n", query->result);
 						break;
 					case INVALID_INDEX_ERR:
 						printf("Invalid Index: %d\n", query->index);

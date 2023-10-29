@@ -69,5 +69,6 @@ void save_table(Table *table) {
 	fseek(table->db_file, ((table->n_records / PAGE_SIZE) + 1) * (RECORD_SIZE * PAGE_SIZE), SEEK_SET);
 	fwrite(n_of_elements_str, strlen(n_of_elements_str), 1, table->db_file);
 
+	free(n_of_elements_str);
 }
 

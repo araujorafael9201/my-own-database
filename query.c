@@ -12,6 +12,7 @@ QUERY *init_query() {
 
 	return query;
 }
+
 void execute_query(Table *table, QUERY *query) {
 	int page_n;
 	int page_offset;
@@ -145,4 +146,11 @@ void parse_query(char *query_buffer, QUERY *query) {
 	}
 
 	free(query_buffer_copy);
+}
+
+void close_query(QUERY *query) {
+	free(query->result);
+	free(query->user_to_insert);
+	free(query->name_to_search);
+	free(query);
 }

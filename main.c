@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
 
 	fclose(table->db_file);
 
-	free(query);
+	close_query(query);
 	free(query_text_buffer);
 
 	free(table);

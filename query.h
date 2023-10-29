@@ -36,6 +36,7 @@ typedef struct QUERY {
 QUERY *init_query();
 void execute_query(Table *table, QUERY *query);
 void parse_query(char *query_buffer, QUERY *query);
+void close_query(QUERY *query);
 
 
 #endif

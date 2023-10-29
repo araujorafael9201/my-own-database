@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall -g
 
 main: main.c query.o table.o user.o
 	$(CC) $(CFLAGS) -o main main.c table.o query.o user.o
@@ -12,3 +12,6 @@ user: user.c
 
 table: table.c
 	$(CC) $(CFLAGS) -c table.c
+
+clean:
+	rm -rf *.o main

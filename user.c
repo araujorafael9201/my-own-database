@@ -19,7 +19,7 @@ void deserialize_user(User *user, char *serialized_user) {
 	
 	memcpy(height,serialized_user + NAME_SIZE + EMAIL_SIZE, 10);
 
-	int n_length;
+	int n_length = 0;
 	for (int i = 0 ; i < 10 ; ++i) {
 		if (height[i]) {
 			n_length = 10 - i;

@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
 	if (argc >= 2) {
 		table = init_table(argv[1]);
 	} else {
-		table = init_table("test.db");
+		table = init_table("test");
 	}
 
 	char *query_text_buffer = malloc(MAX_QUERY_SIZE);
@@ -60,6 +60,12 @@ int main(int argc, char* argv[]) {
 					case INSERT_SUCCESS:
 						printf("Inserted %s\n", query->result);
 						break;
+					case INSERT_ERR:
+						printf("Error inserting %s\n", query->result);
+						break;
+					case INSERT_ERR_DUPLICATE:
+						printf("%s already exists\n", query->result);
+						break;
 					case SELECT_SUCCESS:
 						printf("%s\n", query->result);
 						break;
@@ -67,6 +73,8 @@ int main(int argc, char* argv[]) {
 						printf("Could not find %s\n", query->result);
 						break;
 					case INVALID_INDEX_ERR:
+						printf("Invalid Index: %d\n", query->index);
+						break;
 						printf("Invalid Index: %d\n", query->index);
 						break;
 					case MAX_RECORDS_ERR:

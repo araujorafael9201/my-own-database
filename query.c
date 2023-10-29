@@ -19,8 +19,10 @@ void execute_query(Table *table, QUERY *query) {
 	void *page_buffer;
 	char *serialized_user_str = malloc(RECORD_SIZE);
 	char *return_str = malloc(RECORD_SIZE + 10);
-	User *deserialized_user = malloc(sizeof(User));
-	int found = 0;
+	User deserialized_user;
+	INDEX_ENTRY entry;
+	int idx_position;
+	void *entry_str;
 
 	switch (query->type) {
 		case SELECT_BY_INDEX:
@@ -39,9 +41,9 @@ void execute_query(Table *table, QUERY *query) {
 			memcpy(serialized_user_str, page_buffer + (page_offset * RECORD_SIZE), RECORD_SIZE);
 			serialized_user_str[RECORD_SIZE] = '\0';
 
-			deserialize_user(deserialized_user, serialized_user_str);
+			deserialize_user(&deserialized_user, serialized_user_str);
 		
-			sprintf(return_str, "%s - %s - %d", deserialized_user->name, deserialized_user->email, deserialized_user->height);
+			sprintf(return_str, "%s - %s - %d", deserialized_user.name, deserialized_user.email, deserialized_user.height);
 
 			memset(query->result, 0, strlen(query->result)); // Clearing previous result
 			strncpy(query->result, return_str, strlen(return_str));
@@ -49,38 +51,36 @@ void execute_query(Table *table, QUERY *query) {
 			query->result_type = SELECT_SUCCESS;
 
 			break;
-		case SELECT_BY_NAME:
-			for (int i = 0; i < table->n_records; ++i) {
-				page_n = i / PAGE_SIZE;
-				page_offset = i % PAGE_SIZE;
+		case SELECT_BY_NAME: 
+				idx_position = hash((query->name_to_search));
+				load_idx_entry(table->name_idx, idx_position);
+				entry_str = table->name_idx->entries[idx_position];
+		
+				deserialize_entry(&entry, entry_str);
+				page_n = entry.index / PAGE_SIZE;
+				page_offset = entry.index % PAGE_SIZE;
 
 				load_page(page_n, table);
 				page_buffer = table->pages[page_n];
-			
+				
 				memcpy(serialized_user_str, (page_buffer + (page_offset * RECORD_SIZE)), RECORD_SIZE);
-				deserialize_user(deserialized_user, serialized_user_str);
+				deserialize_user(&deserialized_user, serialized_user_str);
 
-				if (strcmp(deserialized_user->name, query->name_to_search) == 0) {
-					sprintf(return_str, "%s - %s - %d", deserialized_user->name, deserialized_user->email, deserialized_user->height);
+				memset(query->result, 0, strlen(query->result)); // Clearing previous result
+				if (strcmp(query->name_to_search, deserialized_user.name) == 0) {
+					sprintf(return_str, "%s - %s - %d", deserialized_user.name, deserialized_user.email, deserialized_user.height);
 
-					memset(query->result, 0, strlen(query->result)); // Clearing previous result
 					strncpy(query->result, return_str, strlen(return_str));
 
 					query->result_type = SELECT_SUCCESS;
-			
-					found = 1;
-					break;
-				};
-			}
 
-			if (found == 0) {
-				memset(query->result, 0, strlen(query->result)); // Clearing previous result
+				} else {
 				sprintf(return_str, "%s", query->name_to_search);
 				strncpy(query->result, return_str, strlen(return_str));
 
 				query->result_type = SELECT_ERR;
-			}	
 
+				}
 			break;
 		case INSERT:
 			if (table->n_records >= (N_PAGES * PAGE_SIZE)) {
@@ -89,11 +89,28 @@ void execute_query(Table *table, QUERY *query) {
 			}
 
 			User *user_to_insert = query->user_to_insert;
+		
+			// check if name is unique
+			idx_position = hash(user_to_insert->name);
+			load_idx_entry(table->name_idx, idx_position);
+			entry_str = table->name_idx->entries[idx_position];
+			deserialize_entry(&entry, entry_str);
+		
+			if (strcmp(entry.name, "") != 0) { // name exists
+				memset(query->result, 0, strlen(query->result)); // Clearing previous result
+				strncpy(query->result, query->user_to_insert->name, strlen(query->user_to_insert->name));
 			
+				query->result_type = INSERT_ERR_DUPLICATE;
+
+				break;
+			}
+
 			serialize_user(user_to_insert, serialized_user_str);
 
 			page_n = (table->n_records) / PAGE_SIZE;
 			page_offset = (table->n_records) % PAGE_SIZE;
+
+			insert_entry(table->name_idx, query->user_to_insert, table);
 
 			load_page(page_n, table);
 			page_buffer = table->pages[page_n];
@@ -116,7 +133,6 @@ void execute_query(Table *table, QUERY *query) {
 
 	free(serialized_user_str);
 	free(return_str);
-	free(deserialized_user);
 }
 
 

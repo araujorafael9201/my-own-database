@@ -1,9 +1,93 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "table.h"
 #include "user.h"
 
-Table *init_table(char *db_file) {
+NAME_INDEX *init_index(char *filename) {
+	NAME_INDEX *idx = malloc(sizeof(NAME_INDEX));
+
+	idx->idx_file = fopen(filename, "rb+");
+
+	return idx;
+}
+
+void load_idx_entry(NAME_INDEX *idx, int position) {
+	if (idx->entries[position] != NULL) {
+		return;
+	}
+	idx->entries[position] = malloc(NAME_SIZE + 10);
+	fseek(idx->idx_file, (position * (NAME_SIZE + 10)), SEEK_SET);
+	fread(idx->entries[position], (NAME_SIZE + 10), 1, idx->idx_file);
+
+}
+
+int hash(char *name) {
+	int idx = 0;
+
+	for (int i = 0 ; i < strlen(name) ; ++i) {
+		idx += name[i];
+	}
+
+	idx = idx % (PAGE_SIZE * N_PAGES);
+
+	return idx;
+}
+
+void insert_entry(NAME_INDEX *name_idx, User *user, Table *table) {
+	int index = hash(user->name);
+
+	load_idx_entry(name_idx, index);
+	INDEX_ENTRY entry;
+	strncpy(entry.name, user->name, strlen(user->name));
+	entry.index = table->n_records;
+
+	char serialized[NAME_SIZE + 10];
+	serialize_entry(&entry, serialized);
+
+	memcpy(name_idx->entries[index], serialized, NAME_SIZE + 10);
+}
+
+void deserialize_entry(INDEX_ENTRY *entry ,char *serialized) {
+	strncpy(entry->name, serialized, NAME_SIZE);
+
+	char position_str[10];
+	strncpy(position_str, serialized + NAME_SIZE, 10);
+	
+	entry->index = atoi(position_str);
+}
+
+void serialize_entry(INDEX_ENTRY *entry, char *serialized) {
+	memcpy(serialized, entry->name, strlen(entry->name));
+
+	char position_str[10];
+	sprintf(position_str, "%.9d", entry->index);
+
+	memcpy(serialized + NAME_SIZE, position_str, 10);
+}
+
+void save_name_index(NAME_INDEX *idx) {
+	int size = NAME_SIZE + 10;
+	for (int i = 0 ; i < (PAGE_SIZE * N_PAGES) ; ++i) {
+		if (idx->entries[i] != NULL) {
+			// memset(serialized_idx_entry, 0, strlen(serialized_idx_entry));
+			fseek(idx->idx_file, (size * i), SEEK_SET);
+			fwrite(idx->entries[i], size, 1, idx->idx_file);
+
+			free(idx->entries[i]);
+		}
+	}
+
+	fclose(idx->idx_file);
+}
+
+Table *init_table(char *db_name) {
+	char *db_file = malloc(strlen(db_name) + 5);
+	char *idx_file = malloc(strlen(db_name) + 5);
+
+	sprintf(db_file, "%s.db", db_name);
+	sprintf(idx_file, "%s.idx", db_name);
+
 	Table *table = malloc(sizeof(Table));
 	table->db_file = fopen(db_file, "rb+");
 
@@ -30,9 +114,17 @@ Table *init_table(char *db_file) {
 
 		free(n_records);
 		free(n_records_trimmed);
+
 	}
 
 	fseek(table->db_file, 0, SEEK_SET);
+
+	// Load index
+	NAME_INDEX *name_idx = init_index(idx_file);
+	table->name_idx = name_idx;
+
+	free(db_file);
+	free(idx_file);
 	return table;
 }
 
@@ -63,6 +155,9 @@ void save_table(Table *table) {
 		free(table->pages[i]);
 	}
 
+	save_name_index(table->name_idx);
+	free(table->name_idx);
+
 	// Write n of elements in the end of the file
 	char *n_of_elements_str = malloc(sizeof(char) * 10);
 	sprintf(n_of_elements_str, "%d", table->n_records);
@@ -71,4 +166,5 @@ void save_table(Table *table) {
 
 	free(n_of_elements_str);
 }
+
 
